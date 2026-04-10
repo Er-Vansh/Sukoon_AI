@@ -8,11 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { createClient } from "@/lib/client"
-import { BreathingGame } from "./breathing-game"
-import { ZenGarden } from "./zen-garden"
-import { ForestGame } from "./forest-game"
-import { OceanWaves } from "./ocean-waves"
-import { MemoryMap } from "./memory-map"
+import dynamic from "next/dynamic"
+import Image from "next/image"
+
+const BreathingGame = dynamic(() => import("./breathing-game").then((mod) => mod.BreathingGame), { ssr: false })
+const ZenGarden = dynamic(() => import("./zen-garden").then((mod) => mod.ZenGarden), { ssr: false })
+const ForestGame = dynamic(() => import("./forest-game").then((mod) => mod.ForestGame), { ssr: false })
+const OceanWaves = dynamic(() => import("./ocean-waves").then((mod) => mod.OceanWaves), { ssr: false })
+const MemoryMap = dynamic(() => import("./memory-map").then((mod) => mod.MemoryMap), { ssr: false })
 
 interface GuidedRoutineProps {
   title: string
@@ -32,7 +35,9 @@ const GuidedRoutine = ({ title, description, steps, tip, image }: GuidedRoutineP
 
   return (
     <div className="space-y-4">
-      <img src={image || "/placeholder.svg"} alt={title} className="h-36 w-full rounded-lg object-cover border border-primary/20" />
+      <div className="relative h-36 w-full rounded-lg overflow-hidden border border-primary/20">
+        <Image src={image || "/placeholder.svg"} alt={title} fill className="object-cover" />
+      </div>
       <p className="text-sm text-muted-foreground">{description}</p>
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -117,11 +122,14 @@ function GratitudeJournal({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4">
-      <img
-        src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80"
-        alt="Gratitude journal"
-        className="h-36 w-full rounded-lg object-cover border border-primary/20"
-      />
+      <div className="relative h-36 w-full rounded-lg overflow-hidden border border-primary/20">
+        <Image
+          src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1200&q=80"
+          alt="Gratitude journal"
+          fill
+          className="object-cover"
+        />
+      </div>
       <p className="text-sm text-muted-foreground">
         Write a few things you are grateful for today. Your notes are saved and visible on your dashboard.
       </p>
@@ -397,11 +405,14 @@ export const AnxietyGames = ({ userId, onGamePlayed }: AnxietyGamesProps) => {
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold">{game.title}</h4>
-                        <img
-                          src={game.image || "/placeholder.svg"}
-                          alt={game.title}
-                          className="w-full h-24 object-cover rounded-md mt-2 border border-primary/10"
-                        />
+                        <div className="relative w-full h-24 mt-2 overflow-hidden rounded-md border border-primary/10">
+                          <Image
+                            src={game.image || "/placeholder.svg"}
+                            alt={game.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">{game.description}</p>
                         <div className="flex items-center gap-2 mt-3">
                           <Music2 className="h-4 w-4 text-muted-foreground" />

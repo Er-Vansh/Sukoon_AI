@@ -11,11 +11,15 @@ import Link from "next/link"
 import { AppHeader } from "@/components/app-header"
 import { AppFooter } from "@/components/app-footer"
 import { AnxietyGames } from "@/components/anxiety-games"
-import { ThreeScene } from "@/components/three-scene"
-import { MoodAnalytics } from "@/components/mood-analytics"
 import { LeaveReviewDialog } from "@/components/leave-review-dialog"
+import { OnboardingTour } from "@/components/onboarding-tour"
+import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
+import dynamic from "next/dynamic"
 import type { User } from "@supabase/supabase-js"
+
+const ThreeScene = dynamic(() => import("@/components/three-scene").then((mod) => mod.ThreeScene), { ssr: false })
+const MoodAnalytics = dynamic(() => import("@/components/mood-analytics").then((mod) => mod.MoodAnalytics), { ssr: false })
 
 const moods = [
   { emoji: "😔", label: "Down", value: 0 },
@@ -44,12 +48,13 @@ export default function PatientDashboard() {
   const [savedMood, setSavedMood] = useState<number | null>(null)
   const [isSavingMood, setIsSavingMood] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-    const [todayActivityCount, setTodayActivityCount] = useState(0)
-    const router = useRouter()
-    const supabase = createClient()
+  const [todayActivityCount, setTodayActivityCount] = useState(0)
+  const router = useRouter()
+
 
     useEffect(() => {
       async function loadData() {
+        const supabase = createClient()
         try {
           const {
             data: { user: currentUser },
@@ -129,10 +134,11 @@ export default function PatientDashboard() {
       }
 
       loadData()
-    }, [router, supabase])
+    }, [router])
 
     const handleGamePlayed = async (gameName: string, description: string) => {
       if (!user) return
+      const supabase = createClient()
 
       try {
         const { error } = await supabase.from("activity_logs").insert({
@@ -152,6 +158,7 @@ export default function PatientDashboard() {
     }
 
     const handleSignOut = async () => {
+      const supabase = createClient()
       await supabase.auth.signOut()
       router.push("/auth/login")
     }
@@ -159,6 +166,7 @@ export default function PatientDashboard() {
   const saveMood = async () => {
     if (!user) return
     setIsSavingMood(true)
+    const supabase = createClient()
     try {
       const currentMood = moods[selectedMood]
       const { error } = await supabase.from("mood_entries").insert({
@@ -178,8 +186,19 @@ export default function PatientDashboard() {
 
     if (isLoading) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="min-h-screen bg-background flex flex-col">
+          <AppHeader />
+          <div className="flex-1 container mx-auto px-4 py-8">
+            <div className="space-y-8">
+              <Skeleton className="h-40 w-full rounded-xl" />
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                 <Skeleton className="h-[300px] rounded-xl" />
+                 <Skeleton className="h-[300px] rounded-xl" />
+                 <Skeleton className="h-[300px] rounded-xl lg:col-span-1 md:col-span-2" />
+              </div>
+              <Skeleton className="h-[250px] w-full rounded-xl" />
+            </div>
+          </div>
         </div>
       )
     }
@@ -203,6 +222,7 @@ export default function PatientDashboard() {
 
     return (
       <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+        <OnboardingTour />
         <ThreeScene />
         <AppHeader />
 
@@ -372,6 +392,10 @@ export default function PatientDashboard() {
                 )}
               </CardContent>
             </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants} className="mb-8">
+            <MoodAnalytics userId={user!.id} />
           </motion.div>
 
           <motion.div variants={itemVariants} className="mb-8">
