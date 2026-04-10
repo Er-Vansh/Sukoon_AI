@@ -12,6 +12,8 @@ import { AppHeader } from "@/components/app-header"
 import { AppFooter } from "@/components/app-footer"
 import { AnxietyGames } from "@/components/anxiety-games"
 import { ThreeScene } from "@/components/three-scene"
+import { MoodAnalytics } from "@/components/mood-analytics"
+import { LeaveReviewDialog } from "@/components/leave-review-dialog"
 import { motion } from "framer-motion"
 import type { User } from "@supabase/supabase-js"
 
@@ -36,6 +38,7 @@ export default function PatientDashboard() {
   const [profile, setProfile] = useState<any>(null)
   const [requests, setRequests] = useState<any[]>([])
   const [appointments, setAppointments] = useState<any[]>([])
+  const [pastAppointments, setPastAppointments] = useState<any[]>([])
   const [gratitudeEntries, setGratitudeEntries] = useState<any[]>([])
   const [selectedMood, setSelectedMood] = useState(2)
   const [savedMood, setSavedMood] = useState<number | null>(null)
@@ -59,7 +62,7 @@ export default function PatientDashboard() {
 
           setUser(currentUser)
 
-          const [profileRes, requestsRes, appointmentsRes, activityLogsRes, gratitudeRes, moodRes] = await Promise.all([
+          const [profileRes, requestsRes, appointmentsRes, pastAppointmentsRes, activityLogsRes, gratitudeRes, moodRes] = await Promise.all([
             supabase.from("profiles").select("*").eq("id", currentUser.id).single(),
             supabase
               .from("consultation_requests")
@@ -73,6 +76,13 @@ export default function PatientDashboard() {
               .eq("patient_id", currentUser.id)
               .gte("scheduled_date", new Date().toISOString())
               .order("scheduled_date", { ascending: true })
+              .limit(5),
+            supabase
+              .from("appointments")
+              .select(`*, profiles!appointments_counsellor_id_fkey(full_name), counsellor_reviews(id)`)
+              .eq("patient_id", currentUser.id)
+              .lt("scheduled_date", new Date().toISOString())
+              .order("scheduled_date", { ascending: false })
               .limit(5),
               supabase
                 .from("activity_logs")
@@ -103,6 +113,7 @@ export default function PatientDashboard() {
           setProfile(profileRes.data)
           setRequests(requestsRes.data || [])
           setAppointments(appointmentsRes.data || [])
+          setPastAppointments(pastAppointmentsRes.data || [])
           setTodayActivityCount(activityLogsRes.data?.length || 0)
           setGratitudeEntries(gratitudeRes.data || [])
           const latestMood = moodRes.data?.[0]?.mood_value
@@ -498,6 +509,54 @@ export default function PatientDashboard() {
                             </motion.div>
                         )}
                       </motion.div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card className="mb-6 md:mb-8 bg-muted/20 border-border">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg md:text-xl text-muted-foreground">
+                    <Clock className="h-5 w-5" />
+                    Past Appointments
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pastAppointments.length === 0 ? (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <p className="text-sm">No past appointments</p>
+                    </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pastAppointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg gap-3 opacity-80"
+                      >
+                        <div className="space-y-1">
+                          <p className="font-medium text-foreground">{appointment.profiles?.full_name}</p>
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(appointment.scheduled_date).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                           {appointment.counsellor_reviews && appointment.counsellor_reviews.length > 0 ? (
+                             <Badge variant="outline" className="text-muted-foreground">Reviewed</Badge>
+                           ) : (
+                             <LeaveReviewDialog
+                               patientId={user!.id}
+                               counsellorId={appointment.counsellor_id}
+                               appointmentId={appointment.id}
+                             />
+                           )}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

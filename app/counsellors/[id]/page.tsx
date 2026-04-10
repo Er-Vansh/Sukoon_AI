@@ -37,6 +37,12 @@ export default async function CounsellorProfilePage({ params }: { params: Promis
     notFound()
   }
 
+  const { data: reviews } = await supabase
+    .from("counsellor_reviews")
+    .select(`*, profiles!counsellor_reviews_patient_id_fkey(full_name)`)
+    .eq("counsellor_id", id)
+    .order("created_at", { ascending: false })
+
   const counsellorProfile = counsellor.counsellor_profiles?.[0]
 
   return (
@@ -142,6 +148,37 @@ export default async function CounsellorProfilePage({ params }: { params: Promis
               </CardHeader>
               <CardContent>
                 <BookingForm counsellorId={counsellor.id} patientId={user.id} />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Patient Reviews</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {reviews && reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((review) => (
+                      <div key={review.id} className="border-b pb-4 last:border-0 last:pb-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium text-sm">{review.profiles?.full_name || "Anonymous Patient"}</p>
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${star <= review.rating ? "fill-yellow-500 text-yellow-500" : "text-muted"}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground break-words">{review.review_text || "No written review provided."}</p>
+                        <p className="text-xs text-muted-foreground mt-2 opacity-60">{new Date(review.created_at).toLocaleDateString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground italic text-sm">No reviews yet.</p>
+                )}
               </CardContent>
             </Card>
           </div>

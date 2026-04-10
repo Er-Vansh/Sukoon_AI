@@ -19,12 +19,23 @@ interface AcceptRequestFormProps {
 export function AcceptRequestForm({ requestId, patientId, counsellorId }: AcceptRequestFormProps) {
   const [scheduledDate, setScheduledDate] = useState("")
   const [duration, setDuration] = useState("60")
-  const [meetingLink, setMeetingLink] = useState("")
-  const [meetingPlatform, setMeetingPlatform] = useState<"zoom" | "google_meet">("zoom")
+  const [roomId] = useState(() => Math.random().toString(36).substring(2, 15))
+  const [meetingPlatform, setMeetingPlatform] = useState<"zoom" | "google_meet" | "jitsi">("jitsi")
+  const [meetingLink, setMeetingLink] = useState(`/meeting/${roomId}`)
   const [notes, setNotes] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+
+  const handlePlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const platform = e.target.value as "zoom" | "google_meet" | "jitsi"
+    setMeetingPlatform(platform)
+    if (platform === "jitsi") {
+      setMeetingLink(`/meeting/${roomId}`)
+    } else {
+      setMeetingLink("")
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,7 +55,7 @@ export function AcceptRequestForm({ requestId, patientId, counsellorId }: Accept
           scheduled_date: new Date(scheduledDate).toISOString(),
           duration_minutes: Number.parseInt(duration),
           meeting_link: meetingLink,
-          meeting_platform: meetingPlatform,
+          meeting_platform: meetingPlatform === "jitsi" ? "other" : meetingPlatform,
           status: "scheduled",
           notes,
         })
@@ -117,9 +128,10 @@ export function AcceptRequestForm({ requestId, patientId, counsellorId }: Accept
           id="meetingPlatform"
           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:border-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
           value={meetingPlatform}
-          onChange={(e) => setMeetingPlatform(e.target.value as "zoom" | "google_meet")}
+          onChange={handlePlatformChange}
           required
         >
+          <option value="jitsi">In-App Video (Jitsi)</option>
           <option value="zoom">Zoom</option>
           <option value="google_meet">Google Meet</option>
         </select>
@@ -129,11 +141,13 @@ export function AcceptRequestForm({ requestId, patientId, counsellorId }: Accept
         <Label htmlFor="meetingLink">Meeting Link</Label>
         <Input
           id="meetingLink"
-          type="url"
+          type={meetingPlatform === "jitsi" ? "text" : "url"}
           placeholder="https://zoom.us/j/..."
           value={meetingLink}
           onChange={(e) => setMeetingLink(e.target.value)}
           required
+          readOnly={meetingPlatform === "jitsi"}
+          className={meetingPlatform === "jitsi" ? "bg-muted text-muted-foreground" : ""}
         />
       </div>
 

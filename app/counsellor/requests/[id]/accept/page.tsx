@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation"
+import { headers } from "next/headers"
 import { createClient } from "@/lib/server"
 import { AcceptRequestForm } from "@/components/accept-request-form"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,13 +10,12 @@ export default async function AcceptRequestPage({ params }: { params: Promise<{ 
   const { id } = await params
   const supabase = await createClient()
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-  if (userError || !user) {
+  const requestHeaders = await headers()
+  const userId = requestHeaders.get("x-user-id")
+  if (!userId) {
     redirect("/auth/login")
   }
+  const user = { id: userId }
 
   // Get request details
   const { data: request } = await supabase
