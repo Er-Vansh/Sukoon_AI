@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation"
+import { headers } from "next/headers"
 import { createClient } from "@/lib/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,13 +11,16 @@ export default async function CounsellorProfilePage({ params }: { params: Promis
   const { id } = await params
   const supabase = await createClient()
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-  if (userError || !user) {
+  // Get user from the proxy headers which is more reliable than cookies
+  const requestHeaders = await headers()
+  const userId = requestHeaders.get("x-user-id")
+  
+  if (!userId) {
     redirect("/auth/login")
   }
+
+  // We can construct a minimal user object since only the id is needed for the booking form
+  const user = { id: userId }
 
   // Get counsellor details
   const { data: counsellor } = await supabase

@@ -15,7 +15,14 @@ function getPublicEnv() {
 export async function updateSession(request: NextRequest) {
   const { url, anonKey } = getPublicEnv()
 
-  let response = NextResponse.next({ request })
+  // Create a new Headers object from the incoming request so we can modify it
+  const requestHeaders = new Headers(request.headers)
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -27,7 +34,12 @@ export async function updateSession(request: NextRequest) {
           request.cookies.set(name, value)
         })
 
-        response = NextResponse.next({ request })
+        // When cookies are set, we need to create a new response with the updated request headers
+        response = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        })
 
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options)
@@ -39,6 +51,15 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (user) {
+    requestHeaders.set("x-user-id", user.id)
+    response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
+  }
 
   const pathname = request.nextUrl.pathname
   const isProtectedCounsellorRoute = pathname.startsWith("/counsellor")
