@@ -69,7 +69,7 @@ export function AppHeader({ variant = "default", user: initialUser }: AppHeaderP
       const navLinks = user
         ? [
                 { href: "/dashboard", label: "Dashboard" },
-                { href: "https://frontend-9pry.vercel.app/", label: "Chat", external: true },
+                { href: "/chat", label: "Chat" },
 
             { href: "/counsellors", label: "Counsellors" },
             { href: "/contact", label: "Contact" },
@@ -108,6 +108,18 @@ export function AppHeader({ variant = "default", user: initialUser }: AppHeaderP
               <nav className="hidden md:flex items-center gap-1">
                 {navLinks.map((link) => {
                   const isExternal = link.href.startsWith("http");
+                  if (link.href === "/chat") {
+                    return (
+                      <Button
+                        key={link.href}
+                        variant="ghost"
+                        className="hover:bg-primary/10 transition-all duration-300 hover:scale-105"
+                        onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                      >
+                        {link.label}
+                      </Button>
+                    );
+                  }
                   return isExternal ? (
                     <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer">
                       <Button variant="ghost" className="hover:bg-primary/10 transition-all duration-300 hover:scale-105">
@@ -178,13 +190,30 @@ export function AppHeader({ variant = "default", user: initialUser }: AppHeaderP
                 <SheetContent side="right" className="w-[80%] sm:w-87.5">
                   <div className="flex flex-col gap-4 mt-8">
                     {showNavLinks &&
-                      navLinks.map((link) => (
-                      <Link key={link.href} href={link.href} onClick={() => setIsMobileMenuOpen(false)}>
-                        <Button variant="ghost" className="w-full justify-start text-lg">
-                          {link.label}
-                        </Button>
-                      </Link>
-                    ))}
+                      navLinks.map((link) => {
+                        if (link.href === "/chat") {
+                          return (
+                            <Button
+                              key={link.href}
+                              variant="ghost"
+                              className="w-full justify-start text-lg"
+                              onClick={() => {
+                                setIsMobileMenuOpen(false);
+                                window.dispatchEvent(new CustomEvent("open-ai-chat"));
+                              }}
+                            >
+                              {link.label}
+                            </Button>
+                          );
+                        }
+                        return (
+                          <Link key={link.href} href={link.href} onClick={() => setIsMobileMenuOpen(false)}>
+                            <Button variant="ghost" className="w-full justify-start text-lg">
+                              {link.label}
+                            </Button>
+                          </Link>
+                        );
+                      })}
                   {user ? (
                     <>
                       <div className="border-t my-2" />

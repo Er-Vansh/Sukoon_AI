@@ -10,5 +10,5 @@ export default async function ChatPage() {
     redirect("/auth/login")
   }
 
-  return <AIChatInterface userId={user.id} />
+  return <AIChatInterface userId={userId} />
 }

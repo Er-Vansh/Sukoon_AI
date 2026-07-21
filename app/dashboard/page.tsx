@@ -10,16 +10,21 @@ import { MessageCircle, Users, Calendar, LogOut, Clock, Loader2, Heart, Notebook
 import Link from "next/link"
 import { AppHeader } from "@/components/app-header"
 import { AppFooter } from "@/components/app-footer"
-import { AnxietyGames } from "@/components/anxiety-games"
-import { LeaveReviewDialog } from "@/components/leave-review-dialog"
-import { OnboardingTour } from "@/components/onboarding-tour"
 import { Skeleton } from "@/components/ui/skeleton"
 import { motion } from "framer-motion"
 import dynamic from "next/dynamic"
 import type { User } from "@supabase/supabase-js"
 
-const ThreeScene = dynamic(() => import("@/components/three-scene").then((mod) => mod.ThreeScene), { ssr: false })
-const MoodAnalytics = dynamic(() => import("@/components/mood-analytics").then((mod) => mod.MoodAnalytics), { ssr: false })
+import { getUserStats, updateActivity, type UserStats } from "@/lib/gamification"
+
+const ThreeScene = dynamic(() => import("@/components/three-scene").then((mod: any) => mod.ThreeScene), { ssr: false })
+const MoodAnalytics = dynamic(() => import("@/components/mood-analytics").then((mod: any) => mod.MoodAnalytics), { ssr: false }) as any
+const AnxietyGames = dynamic(() => import("@/components/anxiety-games").then((mod: any) => mod.AnxietyGames), { 
+  ssr: false,
+  loading: () => <Skeleton className="h-[400px] w-full" />
+}) as any
+const OnboardingTour = dynamic(() => import("@/components/onboarding-tour").then((mod: any) => mod.OnboardingTour), { ssr: false })
+const LeaveReviewDialog = dynamic(() => import("@/components/leave-review-dialog").then((mod: any) => mod.LeaveReviewDialog), { ssr: false }) as any
 
 const moods = [
   { emoji: "😔", label: "Down", value: 0 },
@@ -49,6 +54,7 @@ export default function PatientDashboard() {
   const [isSavingMood, setIsSavingMood] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [todayActivityCount, setTodayActivityCount] = useState(0)
+  const [stats, setStats] = useState<UserStats | null>(null)
   const router = useRouter()
 
 
@@ -67,7 +73,7 @@ export default function PatientDashboard() {
 
           setUser(currentUser)
 
-          const [profileRes, requestsRes, appointmentsRes, pastAppointmentsRes, activityLogsRes, gratitudeRes, moodRes] = await Promise.all([
+          const [profileRes, requestsRes, appointmentsRes, pastAppointmentsRes, activityLogsRes, gratitudeRes, moodRes, statsData] = await Promise.all([
             supabase.from("profiles").select("*").eq("id", currentUser.id).single(),
             supabase
               .from("consultation_requests")
@@ -106,6 +112,7 @@ export default function PatientDashboard() {
                 .eq("user_id", currentUser.id)
                 .order("created_at", { ascending: false })
                 .limit(1),
+              getUserStats(currentUser.id)
           ])
 
           const userType = profileRes.data?.user_type || currentUser.user_metadata?.user_type
@@ -121,6 +128,7 @@ export default function PatientDashboard() {
           setPastAppointments(pastAppointmentsRes.data || [])
           setTodayActivityCount(activityLogsRes.data?.length || 0)
           setGratitudeEntries(gratitudeRes.data || [])
+          setStats(statsData)
           const latestMood = moodRes.data?.[0]?.mood_value
           if (typeof latestMood === "number") {
             setSelectedMood(latestMood)
@@ -151,6 +159,9 @@ export default function PatientDashboard() {
 
           if (!error) {
             setTodayActivityCount((prev) => prev + 1)
+            // Update points and streak
+            const updatedStats = await updateActivity(user.id, 20)
+            if (updatedStats) setStats(updatedStats)
           }
       } catch (error) {
         console.error("Error logging activity:", error)
@@ -176,6 +187,9 @@ export default function PatientDashboard() {
       })
       if (!error) {
         setSavedMood(selectedMood)
+        // Update points and streak
+        const updatedStats = await updateActivity(user.id, 10)
+        if (updatedStats) setStats(updatedStats)
       }
     } catch (error) {
       console.error("Error saving mood:", error)
@@ -260,35 +274,86 @@ export default function PatientDashboard() {
           animate="visible"
         >
             <motion.div variants={itemVariants} className="mb-8">
-              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                  <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-background border-primary/20 relative overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                    <Card className="bg-linear-to-br from-primary/10 via-primary/5 to-background border-primary/20 relative overflow-hidden h-full">
+                      <CardContent className="pt-6 relative z-10">
+                      <div className="text-center">
+                      <motion.div
+                        className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/20 mb-3"
+                        whileHover={{ scale: 1.1, rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                      >
+                          <Heart className="h-6 w-6 text-primary" />
+                        </motion.div>
+                        <h3 className="text-lg font-bold text-foreground mb-1">Activities Today</h3>
+                        <motion.p
+                          className="text-4xl font-bold text-primary"
+                        key={todayActivityCount}
+                        initial={{ scale: 1.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 200 }}
+                      >
+                        {todayActivityCount}
+                      </motion.p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+                  <Card className="bg-linear-to-br from-orange-500/10 via-orange-500/5 to-background border-orange-500/20 relative overflow-hidden h-full">
                     <CardContent className="pt-6 relative z-10">
                     <div className="text-center">
                     <motion.div
-                      className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/20 mb-3"
-                      whileHover={{ scale: 1.1, rotate: 360 }}
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-orange-500/20 mb-3"
+                      whileHover={{ scale: 1.1, rotate: 15 }}
                       transition={{ duration: 0.6 }}
                     >
-                        <Heart className="h-8 w-8 text-primary" />
+                        <Sparkles className="h-6 w-6 text-orange-500" />
                       </motion.div>
-                      <h3 className="text-2xl font-bold text-foreground mb-2">Activities Completed Today</h3>
+                      <h3 className="text-lg font-bold text-foreground mb-1">Active Streak</h3>
                       <motion.p
-                        className="text-5xl font-bold text-primary"
-                      key={todayActivityCount}
+                        className="text-4xl font-bold text-orange-500"
+                      key={stats?.current_streak}
                       initial={{ scale: 1.5, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: "spring", stiffness: 200 }}
                     >
-                      {todayActivityCount}
+                      {stats?.current_streak || 0} days
                     </motion.p>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      {todayActivityCount === 0 ? "Start your wellness journey today!" : "Keep up the great work!"}
-                    </p>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+                <Card className="bg-linear-to-br from-purple-500/10 via-purple-500/5 to-background border-purple-500/20 relative overflow-hidden h-full">
+                  <CardContent className="pt-6 relative z-10">
+                  <div className="text-center">
+                  <motion.div
+                    className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-500/20 mb-3"
+                    whileHover={{ scale: 1.1, y: -5 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                      <Badge className="h-6 w-6 flex items-center justify-center p-0 rounded-full bg-purple-500 text-white">★</Badge>
+                    </motion.div>
+                    <h3 className="text-lg font-bold text-foreground mb-1">Wellness Points</h3>
+                    <motion.p
+                      className="text-4xl font-bold text-purple-500"
+                    key={stats?.points}
+                    initial={{ scale: 1.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                  >
+                    {stats?.points || 0}
+                  </motion.p>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
+        </div>
+      </motion.div>
 
           <motion.div variants={itemVariants} className="mb-8">
             <Card
@@ -443,11 +508,14 @@ export default function PatientDashboard() {
                         <CardDescription className="text-sm">Connect with our compassionate AI therapist for support anytime, anywhere.</CardDescription>
                       </CardHeader>
                         <CardContent>
-                          <a href="https://frontend-9pry.vercel.app/" target="_blank" rel="noopener noreferrer">
-                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                              <Button className="w-full">Start Session</Button>
-                            </motion.div>
-                          </a>
+                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                            <Button 
+                              className="w-full"
+                              onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                            >
+                              Start Session
+                            </Button>
+                          </motion.div>
                         </CardContent>
                   </Card>
                 </motion.div>

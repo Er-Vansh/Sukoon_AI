@@ -41,10 +41,17 @@ export function AppFooter() {
                   { href: "/#features", label: "Features" },
                   { href: "/#how-it-works", label: "How It Works" },
                   { href: "/counsellors", label: "Find Counsellors" },
-                  { href: "https://frontend-9pry.vercel.app/", label: "AI Therapy" },
+                  { href: "/chat", label: "AI Therapy" },
                 ].map((link) => (
                   <li key={link.href}>
-                    {link.href.startsWith("http") ? (
+                    {link.href === "/chat" ? (
+                      <button
+                        onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                        className="text-sm text-muted-foreground hover:text-primary transition-colors text-left bg-transparent border-none p-0 cursor-pointer font-normal"
+                      >
+                        {link.label}
+                      </button>
+                    ) : link.href.startsWith("http") ? (
                       <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                         {link.label}
                       </a>

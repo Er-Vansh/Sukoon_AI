@@ -17,7 +17,7 @@ function AnimatedOrb() {
 
   return (
     <Float speed={1.5} rotationIntensity={1} floatIntensity={2}>
-      <Sphere ref={meshRef} args={[1, 64, 64]} scale={2}>
+      <Sphere ref={meshRef} args={[1, 32, 32]} scale={2}>
         <MeshDistortMaterial
           color="#6366f1"
           attach="material"

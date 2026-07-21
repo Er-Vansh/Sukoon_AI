@@ -11,13 +11,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     // Get initial user
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUser(data.user)
+    supabase.auth.getUser().then(({ data }: any) => {
+      if (data?.user) setUser(data.user)
     })
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (_event: any, session: any) => {
         setUser(session?.user ?? null)
       }
     )
@@ -41,7 +41,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           table: 'consultation_requests',
           filter: `counsellor_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           toast.success("New Consultation Request", {
             description: `You have received a new consultation request: ${payload.new.subject}`,
           })
@@ -60,7 +60,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           table: 'appointments',
           filter: `patient_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           toast.success("Appointment Scheduled", {
             description: `A new consultation session has been scheduled for ${new Date(payload.new.scheduled_date).toLocaleString()}.`,
           })
@@ -74,7 +74,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           table: 'consultation_requests',
           filter: `patient_id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: any) => {
           if (payload.new.status === 'accepted') {
              toast.success("Request Accepted", {
                description: "Your consultation request has been accepted by the counsellor.",

@@ -173,14 +173,18 @@ export default function HomePage() {
           </motion.div>
 
             <motion.div className="flex flex-col sm:flex-row gap-4 justify-center pt-4" variants={itemVariants}>
-              <a href="https://frontend-9pry.vercel.app/" target="_blank" rel="noopener noreferrer" className="w-full sm:w-auto">
+              <div className="w-full sm:w-auto">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button size="lg" className="gap-2 w-full">
+                  <Button 
+                    size="lg" 
+                    className="gap-2 w-full"
+                    onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                  >
                     <MessageCircle className="h-5 w-5" />
                     Start AI Therapy
                   </Button>
                 </motion.div>
-              </a>
+              </div>
               <Link href="/counsellors" className="w-full sm:w-auto">
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button size="lg" variant="outline" className="gap-2 bg-transparent w-full">

@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python / ai-agent
+ai-agent/venv/
+ai-agent/.venv/
+ai-agent/__pycache__/
+ai-agent/*.pyc
+ai-agent/.env
+

@@ -5,6 +5,8 @@ import { Analytics } from "@vercel/analytics/next"
 import { ThemeProvider } from "@/components/theme-provider"
 import { NotificationProvider } from "@/components/notification-provider"
 import { Toaster } from "sonner"
+import { EmergencySOS } from "@/components/emergency-sos"
+import { AIChatWidget } from "@/components/ai-chat-widget"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -32,6 +34,8 @@ export default function RootLayout({
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
               <NotificationProvider>
                 {children}
+                <EmergencySOS />
+                <AIChatWidget />
               </NotificationProvider>
               <Toaster position="top-right" richColors />
             </ThemeProvider>

@@ -10,6 +10,8 @@ import Link from "next/link"
 import { createClient } from "@/lib/client"
 import { motion, AnimatePresence } from "framer-motion"
 
+import { FormattedMessage } from "@/components/formatted-message"
+
 interface Message {
   role: "user" | "assistant"
   content: string
@@ -20,7 +22,7 @@ export function AIChatInterface({ userId }: { userId: string }) {
     {
       role: "assistant",
       content:
-        "Hello! I'm here to provide emotional support and listen to whatever's on your mind. How are you feeling today?",
+        "📌 **Welcome to SukoonAI**\nHello and welcome! I'm Dr. Emily Hartman, a clinical psychologist here to listen and support you.\n\n🔹 **Key Guidance & Concepts**\n- **A Safe Space**: You're in a safe and non-judgmental space to explore your thoughts and feelings.\n- **Active Listening**: I'll listen attentively to what you share, and respond with empathy.\n- **Your Journey**: Our conversation is about your journey, and we'll navigate it together at your pace.\n\n💡 **Practical Action / Tip**\nTake a deep breath in, and as you exhale, allow yourself to settle into this moment, feeling calm and supported.",
     },
   ])
   const [input, setInput] = useState("")
@@ -73,19 +75,26 @@ export function AIChatInterface({ userId }: { userId: string }) {
         content: userMessage.content,
       })
 
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Fetch response from the local FastAPI AI-agent backend
+      const backendUrl = process.env.NEXT_PUBLIC_AI_AGENT_URL || "http://localhost:8000"
+      const res = await fetch(`${backendUrl}/ask`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage.content }),
+      })
 
-      const aiResponses = [
-        "I hear you, and I want you to know that your feelings are valid. Can you tell me more about what's been on your mind?",
-        "Thank you for sharing that with me. It takes courage to open up. How has this been affecting your daily life?",
-        "I understand this must be difficult for you. What kind of support do you feel you need right now?",
-        "That's a challenging situation. Have you noticed any patterns in how you're feeling?",
-        "I appreciate your honesty. Remember, it's okay to not be okay sometimes. What helps you feel better when you're going through tough times?",
-      ]
+      if (!res.ok) {
+        throw new Error(`AI agent backend returned an error: ${res.statusText}`)
+      }
+
+      const data = await res.json()
+      const aiResponseContent = data.response
 
       const aiMessage: Message = {
         role: "assistant",
-        content: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        content: aiResponseContent || "I'm here to support you, but I couldn't generate a response just now.",
       }
 
       await supabase.from("chat_messages").insert({
@@ -96,7 +105,12 @@ export function AIChatInterface({ userId }: { userId: string }) {
 
       setMessages((prev) => [...prev, aiMessage])
     } catch (error) {
-      console.error("[v0] Error sending message:", error)
+      console.error("Error sending message to AI agent:", error)
+      const errorMessage: Message = {
+        role: "assistant",
+        content: "I'm having trouble connecting to my service right now. Please make sure the AI-agent server is running on http://localhost:8000.",
+      }
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
@@ -155,7 +169,7 @@ export function AIChatInterface({ userId }: { userId: string }) {
                   }`}
                 >
                   <CardContent className="p-4">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                    <FormattedMessage content={message.content} isUser={message.role === "user"} />
                   </CardContent>
                 </Card>
               </motion.div>

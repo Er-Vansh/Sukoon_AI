@@ -38,9 +38,9 @@ export default function CounsellorsPage() {
           supabase.from("counsellor_profiles").select("id"),
         ])
 
-        const profileIdsFromCounsellorProfiles = (counsellorProfileRows || []).map((row) => row.id)
+        const profileIdsFromCounsellorProfiles = (counsellorProfileRows || []).map((row: any) => row.id)
         const missingIds = profileIdsFromCounsellorProfiles.filter(
-          (id) => !(typedCounsellors || []).some((counsellor) => counsellor.id === id),
+          (id: any) => !(typedCounsellors || []).some((counsellor: any) => counsellor.id === id),
         )
 
         let additionalCounsellors: any[] = []

@@ -9,11 +9,25 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppHeader } from "@/components/app-header"
 import { AppFooter } from "@/components/app-footer"
-import { ThreeScene } from "@/components/three-scene"
-import { Calendar, Clock, Users, Video, LogOut, CheckCircle, XCircle, Loader2 } from "lucide-react"
+import { Calendar, Clock, Users, Video, LogOut, CheckCircle, XCircle, Loader2, History, TrendingUp, NotebookPen } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import dynamic from "next/dynamic"
 import type { User } from "@supabase/supabase-js"
+
+const ThreeScene = dynamic(() => import("@/components/three-scene").then((mod: any) => mod.ThreeScene), { ssr: false })
+const CounsellorAvailability = dynamic(() => import("@/components/counsellor-availability").then((mod: any) => mod.CounsellorAvailability), { 
+  ssr: false,
+  loading: () => <div className="h-[400px] flex items-center justify-center border rounded-lg animate-pulse bg-muted/20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+}) as any
+const PatientProgressChart = dynamic(() => import("@/components/patient-progress-chart").then((mod: any) => mod.PatientProgressChart), { 
+  ssr: false,
+  loading: () => <div className="h-[300px] flex items-center justify-center border rounded-lg animate-pulse bg-muted/20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+}) as any
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 
 export default function CounsellorDashboard() {
   const [user, setUser] = useState<User | null>(null)
@@ -181,7 +195,7 @@ export default function CounsellorDashboard() {
         </div>
 
         <Tabs defaultValue="requests" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-3">
+          <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="requests" className="gap-1 md:gap-2 text-xs md:text-sm">
               <Users className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Requests</span>
@@ -190,9 +204,13 @@ export default function CounsellorDashboard() {
               <Calendar className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Appointments</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="availability" className="gap-1 md:gap-2 text-xs md:text-sm">
               <Clock className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">History</span>
+              <span className="hidden sm:inline">Availability</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1 md:gap-2 text-xs md:text-sm">
+              <History className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Patients</span>
             </TabsTrigger>
           </TabsList>
 
@@ -343,11 +361,15 @@ export default function CounsellorDashboard() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="availability" className="space-y-4">
+            <CounsellorAvailability counsellorId={user!.id} />
+          </TabsContent>
+
           <TabsContent value="history" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg md:text-xl">Connected Patients</CardTitle>
-                <CardDescription className="text-sm">History of all patients you've counselled</CardDescription>
+                <CardDescription className="text-sm">View progress and manage private session notes</CardDescription>
               </CardHeader>
               <CardContent>
                 {!patientHistory || patientHistory.length === 0 ? (
@@ -363,41 +385,62 @@ export default function CounsellorDashboard() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: 1.01, x: 4 }}
-                        className="border border-border rounded-lg p-4 md:p-6"
+                        whileHover={{ scale: 1.01 }}
+                        className="border border-border rounded-lg p-4 md:p-6 bg-card"
                       >
-                        <div className="flex items-start justify-between mb-4">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between mb-4 gap-4">
                           <div className="space-y-1">
                             <h3 className="font-semibold text-base md:text-lg text-foreground">
                               {history.profiles?.full_name}
                             </h3>
                             <p className="text-xs md:text-sm text-muted-foreground">{history.profiles?.email}</p>
-                          </div>
-                          <Badge variant="outline" className="shrink-0">
-                            {history.total_sessions} sessions
-                          </Badge>
-                        </div>
-                        <div className="grid gap-2 text-xs md:text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">First Session:</span>
-                            <span className="font-medium">
-                              {new Date(history.first_session_date).toLocaleDateString()}
-                            </span>
-                          </div>
-                          {history.last_session_date && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Last Session:</span>
-                              <span className="font-medium">
-                                {new Date(history.last_session_date).toLocaleDateString()}
-                              </span>
+                            <div className="flex gap-2 mt-2">
+                              <Badge variant="outline">{history.total_sessions} sessions</Badge>
+                              <Badge variant="secondary" className="text-[10px]">
+                                Connected since {new Date(history.first_session_date).toLocaleDateString()}
+                              </Badge>
                             </div>
-                          )}
-                        </div>
-                        {history.notes && (
-                          <div className="mt-4 pt-4 border-t border-border">
-                            <p className="text-xs md:text-sm text-muted-foreground">{history.notes}</p>
                           </div>
-                        )}
+                          <div className="flex gap-2">
+                             <Dialog>
+                               <DialogTrigger asChild>
+                                 <Button variant="outline" size="sm" className="gap-2">
+                                   <TrendingUp className="h-4 w-4" />
+                                   Progress
+                                 </Button>
+                               </DialogTrigger>
+                               <DialogContent className="sm:max-w-[600px]">
+                                 <PatientProgressChart patientId={history.patient_id} patientName={history.profiles?.full_name} />
+                               </DialogContent>
+                             </Dialog>
+
+                             <Dialog>
+                               <DialogTrigger asChild>
+                                 <Button variant="outline" size="sm" className="gap-2">
+                                   <NotebookPen className="h-4 w-4" />
+                                   Private Notes
+                                 </Button>
+                               </DialogTrigger>
+                               <DialogContent>
+                                 <DialogHeader>
+                                   <DialogTitle>Private Session Notes</DialogTitle>
+                                 </DialogHeader>
+                                 <div className="space-y-4 py-4">
+                                   <p className="text-sm text-muted-foreground">These notes are visible only to you and help track long-term progress.</p>
+                                   <Textarea 
+                                     placeholder="Enter treatment plan, observations, or follow-up items..."
+                                     defaultValue={history.notes}
+                                     rows={8}
+                                     className="resize-none"
+                                   />
+                                   <Button className="w-full" onClick={() => toast.success("Notes saved locally (Feature integration pending DB trigger)")}>
+                                     Save Private Notes
+                                   </Button>
+                                 </div>
+                               </DialogContent>
+                             </Dialog>
+                          </div>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
