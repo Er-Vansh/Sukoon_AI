@@ -147,19 +147,34 @@ export function AIChatWidget() {
         })
       }
 
-      // Fetch AI response from local Python backend
-      const backendUrl = process.env.NEXT_PUBLIC_AI_AGENT_URL || "http://localhost:8000"
-      const res = await fetch(`${backendUrl}/ask`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ message: userMessageText }),
-      })
+      // Fetch AI response from AI agent (custom server or internal Next.js API route)
+      const backendUrl = process.env.NEXT_PUBLIC_AI_AGENT_URL
+      const primaryUrl = backendUrl ? `${backendUrl}/ask` : "/api/chat"
+
+      let res: Response | null = null
+      try {
+        res = await fetch(primaryUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessageText }),
+        })
+      } catch (e) {
+        console.warn("Primary endpoint failed, falling back to /api/chat", e)
+      }
+
+      // Fallback to internal Next.js API route if primary fetch failed
+      if (!res || !res.ok) {
+        res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessageText }),
+        })
+      }
 
       if (!res.ok) {
         throw new Error(`AI agent backend returned an error: ${res.statusText}`)
       }
+
 
       const data = await res.json()
       const aiResponseContent = data.response
@@ -201,12 +216,13 @@ export function AIChatWidget() {
       console.error("Error sending message to AI agent:", error)
       const errorMessage: Message = {
         role: "assistant",
-        content: "I'm having trouble connecting to my service right now. Please make sure the AI-agent server is running on http://localhost:8000.",
+        content: "I'm experiencing a temporary connection issue. Please try sending your message again.",
       }
       setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
+
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
