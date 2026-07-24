@@ -25,6 +25,7 @@ const AnxietyGames = dynamic(() => import("@/components/anxiety-games").then((mo
 }) as any
 const OnboardingTour = dynamic(() => import("@/components/onboarding-tour").then((mod: any) => mod.OnboardingTour), { ssr: false })
 const LeaveReviewDialog = dynamic(() => import("@/components/leave-review-dialog").then((mod: any) => mod.LeaveReviewDialog), { ssr: false }) as any
+const WellnessStreaks = dynamic(() => import("@/components/wellness-streaks").then((mod: any) => mod.WellnessStreaks), { ssr: false })
 
 const moods = [
   { emoji: "😔", label: "Down", value: 0 },
@@ -273,6 +274,10 @@ export default function PatientDashboard() {
           initial="hidden"
           animate="visible"
         >
+            <motion.div variants={itemVariants} className="mb-8">
+              <WellnessStreaks />
+            </motion.div>
+
             <motion.div variants={itemVariants} className="mb-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>

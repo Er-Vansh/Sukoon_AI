@@ -68,13 +68,14 @@ export function AppHeader({ variant = "default", user: initialUser }: AppHeaderP
   
       const navLinks = user
         ? [
-                { href: "/dashboard", label: "Dashboard" },
-                { href: "/chat", label: "Chat" },
-
+            { href: "/dashboard", label: "Dashboard" },
+            { href: "/chat", label: "Chat" },
+            { href: "/journal", label: "Journal" },
             { href: "/counsellors", label: "Counsellors" },
             { href: "/contact", label: "Contact" },
           ]
         : [
+            { href: "/journal", label: "Journal" },
             { href: "/#features", label: "Features" },
             { href: "/#how-it-works", label: "How It Works" },
             { href: "/counsellors", label: "Counsellors" },

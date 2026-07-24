@@ -6,7 +6,33 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Brain, Send, X, Loader2, RefreshCw, MessageSquare, LogIn, Maximize2, Minimize2, Sparkles, GripHorizontal } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
+import {
+  Brain,
+  Send,
+  X,
+  Loader2,
+  RefreshCw,
+  MessageSquare,
+  LogIn,
+  Maximize2,
+  Minimize2,
+  Sparkles,
+  GripHorizontal,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Printer,
+  CheckCircle2,
+  ArrowRight,
+} from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/client"
 import { FormattedMessage } from "@/components/formatted-message"
@@ -18,6 +44,21 @@ interface Message {
 
 const TRIAL_LIMIT = 3
 
+const CRISIS_KEYWORDS = [
+  "suicide",
+  "kill myself",
+  "end my life",
+  "want to die",
+  "self harm",
+  "cut myself",
+  "no point in living",
+  "hopeless",
+  "can't take it anymore",
+  "overdose",
+  "hurt myself",
+  "better off dead",
+]
+
 const SUGGESTED_PROMPTS = [
   "I'm feeling anxious today",
   "Help me practice a quick mindfulness exercise",
@@ -28,6 +69,10 @@ const SUGGESTED_PROMPTS = [
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeechEnabled, setIsSpeechEnabled] = useState(false)
+  const [showInsights, setShowInsights] = useState(false)
+  
   const dragControls = useDragControls()
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -46,6 +91,80 @@ export function AIChatWidget() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  // Voice Text-to-Speech Handler for Dr. Emily Hartman (Female Voice)
+  const speakText = (text: string) => {
+    if (!isSpeechEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return
+    window.speechSynthesis.cancel()
+    const cleanText = text.replace(/[*#_~`\-🔹📌💡]/g, "").slice(0, 300)
+    const utterance = new SpeechSynthesisUtterance(cleanText)
+    
+    // Gentle, warm pitch & pace tuning for Dr. Emily
+    utterance.rate = 0.92
+    utterance.pitch = 1.15
+
+    const voices = window.speechSynthesis.getVoices()
+    const femaleVoice = voices.find(
+      (v) =>
+        v.lang.startsWith("en") &&
+        (v.name.includes("Female") ||
+          v.name.includes("Samantha") ||
+          v.name.includes("Zira") ||
+          v.name.includes("Victoria") ||
+          v.name.includes("Karen") ||
+          v.name.includes("Fiona") ||
+          v.name.includes("Moira") ||
+          v.name.includes("Jenny") ||
+          v.name.includes("Aria") ||
+          v.name.includes("Google US English"))
+    ) || voices.find(
+      (v) =>
+        v.lang.startsWith("en") &&
+        !v.name.toLowerCase().includes("male") &&
+        !v.name.includes("David") &&
+        !v.name.includes("Alex") &&
+        !v.name.includes("Mark") &&
+        !v.name.includes("George")
+    )
+
+    if (femaleVoice) {
+      utterance.voice = femaleVoice
+    }
+
+    window.speechSynthesis.speak(utterance)
+  }
+
+  // Voice Speech-to-Text Dictation Handler
+  const toggleListening = () => {
+    if (isListening) {
+      setIsListening(false)
+      if ((window as any)._speechRec) {
+        (window as any)._speechRec.stop()
+      }
+    } else {
+      if (typeof window === "undefined") return
+      const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (!SpeechRec) {
+        alert("Speech recognition is not supported in your browser. Please try Google Chrome or Microsoft Edge.")
+        return
+      }
+      const rec = new SpeechRec()
+      rec.continuous = false
+      rec.interimResults = true
+      rec.lang = "en-US"
+      rec.onresult = (e: any) => {
+        const transcript = Array.from(e.results)
+          .map((r: any) => r[0].transcript)
+          .join("")
+        setInput(transcript)
+      }
+      rec.onend = () => setIsListening(false)
+      rec.onerror = () => setIsListening(false)
+      ;(window as any)._speechRec = rec
+      rec.start()
+      setIsListening(true)
+    }
   }
 
   useEffect(() => {
@@ -138,6 +257,21 @@ export function AIChatWidget() {
     const textToSend = customMessage || input.trim()
     if (!textToSend || isLoading) return
 
+    // Check for crisis keywords and intercept with immediate SOS help
+    const isCrisis = CRISIS_KEYWORDS.some((kw) => textToSend.toLowerCase().includes(kw))
+    if (isCrisis) {
+      window.dispatchEvent(new CustomEvent("open-emergency-sos"))
+      const userMessage: Message = { role: "user", content: textToSend }
+      const crisisMessage: Message = {
+        role: "assistant",
+        content:
+          "❤️ **I care deeply about your safety and well-being.**\nIt sounds like you are going through a very painful moment. You do not have to carry this alone. Please reach out to a compassionate professional immediately.\n\n📞 **National Mental Health Helpline (Kiran)**: 1800-599-0019\n📞 **Vandrevala 24/7 Helpline**: 9999666555\n📞 **iCall Helpline**: 9152987821\n\nI have automatically launched the **Emergency Support** window on your screen. Please talk to someone right now.",
+      }
+      setMessages((prev) => [...prev, userMessage, crisisMessage])
+      if (!customMessage) setInput("")
+      return
+    }
+
     // If anonymous and reached trial limit, block send
     if (!userId && anonMsgCount >= TRIAL_LIMIT) return
 
@@ -223,6 +357,7 @@ export function AIChatWidget() {
       }
 
       setMessages((prev) => [...prev, aiMessage])
+      speakText(aiMessage.content)
     } catch (error) {
       console.error("Error sending message to AI agent:", error)
       const errorMessage: Message = {
@@ -508,7 +643,28 @@ export function AIChatWidget() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowInsights(true)}
+                    className="gap-1.5 text-xs h-9 px-3 rounded-xl border-border hover:bg-muted font-medium"
+                    title="Session Insights"
+                  >
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="hidden sm:inline">Session Insights</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSpeechEnabled(!isSpeechEnabled)}
+                    className={`h-9 w-9 rounded-xl transition-colors ${
+                      isSpeechEnabled ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title={isSpeechEnabled ? "Voice Output Active" : "Enable Voice Output"}
+                  >
+                    {isSpeechEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -650,12 +806,12 @@ export function AIChatWidget() {
                       </div>
                     </div>
                   ) : (
-                    <div className="flex gap-3 items-end">
+                    <div className="flex gap-2.5 items-end">
                       <Textarea
                         placeholder={
                           !userId
                             ? `Trial: ${anonMsgCount}/${TRIAL_LIMIT} messages... Ask anything on your mind...`
-                            : "Type your message... (Press Enter to send, Shift+Enter for newline)"
+                            : isListening ? "Listening to your voice..." : "Type or speak your message..."
                         }
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -663,6 +819,18 @@ export function AIChatWidget() {
                         className="min-h-[56px] max-h-[140px] h-[56px] resize-none text-sm rounded-2xl py-3.5 px-4 flex-1 bg-card border-border focus-visible:ring-primary shadow-sm"
                         disabled={isLoading}
                       />
+                      <Button
+                        type="button"
+                        onClick={toggleListening}
+                        variant={isListening ? "destructive" : "outline"}
+                        size="icon"
+                        className={`h-[56px] w-[56px] rounded-2xl shrink-0 border-border ${
+                          isListening ? "animate-pulse" : ""
+                        }`}
+                        title={isListening ? "Stop Listening" : "Voice Dictation"}
+                      >
+                        {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5 text-primary" />}
+                      </Button>
                       <Button
                         onClick={() => handleSend()}
                         disabled={isLoading || !input.trim()}
@@ -682,6 +850,59 @@ export function AIChatWidget() {
           )
         )}
       </AnimatePresence>
+
+      {/* AI Session Insights Modal */}
+      <Dialog open={showInsights} onOpenChange={setShowInsights}>
+        <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2 text-primary">
+              <Sparkles className="h-5 w-5" />
+              <DialogTitle className="text-lg">AI Session Insights & Takeaways</DialogTitle>
+            </div>
+            <DialogDescription className="text-xs">
+              Emotional summary and recommended wellness actions from your session with Dr. Emily Hartman.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-primary">Emotional Shift Summary</h4>
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <span>Anxious & Overwhelmed</span>
+                <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+                <span className="text-green-600 font-bold">Calm & Supported</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Actionable Takeaways</h4>
+              <div className="grid gap-2 text-xs">
+                <div className="p-3 rounded-xl bg-card border border-border flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  <span>Practice 5 minutes of 4-7-8 box breathing before sleeping tonight.</span>
+                </div>
+                <div className="p-3 rounded-xl bg-card border border-border flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  <span>Acknowledge stressful thoughts without self-judgment.</span>
+                </div>
+                <div className="p-3 rounded-xl bg-card border border-border flex items-start gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                  <span>Write down 3 things you are grateful for in your journal today.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-2 text-xs h-9">
+                <Printer className="h-4 w-4" /> Print / Export PDF
+              </Button>
+              <Button size="sm" onClick={() => setShowInsights(false)} className="text-xs h-9">
+                Close Insights
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

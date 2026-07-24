@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { AlertCircle, Phone, Heart, Wind, X, ExternalLink, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,12 @@ import { Card, CardContent } from "@/components/ui/card"
 
 export function EmergencySOS() {
   const [isOpen, setIsOpen] = useState(false)
+
+  useEffect(() => {
+    const handleOpenEmergency = () => setIsOpen(true)
+    window.addEventListener("open-emergency-sos", handleOpenEmergency)
+    return () => window.removeEventListener("open-emergency-sos", handleOpenEmergency)
+  }, [])
 
   const helplines = [
     { name: "Kiran (National)", number: "1800-599-0019", desc: "Mental Health Helpline (Govt)" },
