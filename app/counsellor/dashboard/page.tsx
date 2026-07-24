@@ -24,8 +24,11 @@ const PatientProgressChart = dynamic(() => import("@/components/patient-progress
   ssr: false,
   loading: () => <div className="h-[300px] flex items-center justify-center border rounded-lg animate-pulse bg-muted/20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
 }) as any
+const CounsellorSoapNotes = dynamic(() => import("@/components/counsellor-soap-notes").then((mod: any) => mod.CounsellorSoapNotes), { ssr: false }) as any
+const ClinicalAssessments = dynamic(() => import("@/components/clinical-assessments").then((mod: any) => mod.ClinicalAssessments), { ssr: false }) as any
+const CarePlanAssigner = dynamic(() => import("@/components/care-plan-assigner").then((mod: any) => mod.CarePlanAssigner), { ssr: false }) as any
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 
@@ -141,7 +144,12 @@ export default function CounsellorDashboard() {
         <div className="container mx-auto px-4 py-6 md:py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">Counsellor Dashboard</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground">Counsellor Dashboard</h1>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-600 font-semibold border border-green-500/20 hidden sm:inline-block">
+                  Verified Counselor • License RCI-MH-2024
+                </span>
+              </div>
               <p className="text-sm md:text-base text-muted-foreground mt-1">Welcome back, {profile?.full_name}</p>
             </div>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -195,22 +203,34 @@ export default function CounsellorDashboard() {
         </div>
 
         <Tabs defaultValue="requests" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-4">
-            <TabsTrigger value="requests" className="gap-1 md:gap-2 text-xs md:text-sm">
-              <Users className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Requests</span>
+          <TabsList className="w-full grid grid-cols-3 sm:grid-cols-7 gap-1 bg-muted/60 p-1.5 rounded-2xl h-auto">
+            <TabsTrigger value="requests" className="gap-1 text-xs py-2 rounded-xl">
+              <Users className="h-3.5 w-3.5" />
+              <span>Requests</span>
             </TabsTrigger>
-            <TabsTrigger value="appointments" className="gap-1 md:gap-2 text-xs md:text-sm">
-              <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Appointments</span>
+            <TabsTrigger value="appointments" className="gap-1 text-xs py-2 rounded-xl">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Meetings</span>
             </TabsTrigger>
-            <TabsTrigger value="availability" className="gap-1 md:gap-2 text-xs md:text-sm">
-              <Clock className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Availability</span>
+            <TabsTrigger value="soap" className="gap-1 text-xs py-2 rounded-xl">
+              <NotebookPen className="h-3.5 w-3.5" />
+              <span>SOAP Notes</span>
             </TabsTrigger>
-            <TabsTrigger value="history" className="gap-1 md:gap-2 text-xs md:text-sm">
-              <History className="h-3 w-3 md:h-4 md:w-4" />
-              <span className="hidden sm:inline">Patients</span>
+            <TabsTrigger value="assessments" className="gap-1 text-xs py-2 rounded-xl">
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>Assessments</span>
+            </TabsTrigger>
+            <TabsTrigger value="careplan" className="gap-1 text-xs py-2 rounded-xl">
+              <CheckCircle className="h-3.5 w-3.5" />
+              <span>Care Plans</span>
+            </TabsTrigger>
+            <TabsTrigger value="availability" className="gap-1 text-xs py-2 rounded-xl">
+              <Clock className="h-3.5 w-3.5" />
+              <span>Availability</span>
+            </TabsTrigger>
+            <TabsTrigger value="history" className="gap-1 text-xs py-2 rounded-xl">
+              <History className="h-3.5 w-3.5" />
+              <span>Patients</span>
             </TabsTrigger>
           </TabsList>
 
@@ -336,29 +356,33 @@ export default function CounsellorDashboard() {
                               {appointment.duration_minutes} min)
                             </span>
                           </div>
-                          {appointment.meeting_link && (
-                            <div className="flex items-center gap-2 text-xs md:text-sm">
-                              <Video className="h-4 w-4 text-primary" />
-                              <span className="capitalize">{appointment.meeting_platform}</span>
-                            </div>
-                          )}
                         </div>
-                        {appointment.meeting_link && (
-                          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                            <Button className="w-full gap-2" asChild>
-                              <a href={appointment.meeting_link} target="_blank" rel="noopener noreferrer">
-                                <Video className="h-4 w-4" />
-                                Join Meeting
-                              </a>
-                            </Button>
-                          </motion.div>
-                        )}
+                        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                          <Button className="w-full gap-2 bg-primary hover:bg-primary/90" asChild>
+                            <Link href={`/meeting/${appointment.id}`}>
+                              <Video className="h-4 w-4" />
+                              Launch Video Consultation Room
+                            </Link>
+                          </Button>
+                        </motion.div>
                       </motion.div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="soap" className="space-y-4">
+            <CounsellorSoapNotes />
+          </TabsContent>
+
+          <TabsContent value="assessments" className="space-y-4">
+            <ClinicalAssessments />
+          </TabsContent>
+
+          <TabsContent value="careplan" className="space-y-4">
+            <CarePlanAssigner />
           </TabsContent>
 
           <TabsContent value="availability" className="space-y-4">
@@ -410,6 +434,12 @@ export default function CounsellorDashboard() {
                                  </Button>
                                </DialogTrigger>
                                <DialogContent className="sm:max-w-[600px]">
+                                 <DialogHeader>
+                                   <DialogTitle>Patient Progress Chart</DialogTitle>
+                                   <DialogDescription className="text-xs text-muted-foreground">
+                                     Tracking mood trends and session activity for {history.profiles?.full_name}
+                                   </DialogDescription>
+                                 </DialogHeader>
                                  <PatientProgressChart patientId={history.patient_id} patientName={history.profiles?.full_name} />
                                </DialogContent>
                              </Dialog>
