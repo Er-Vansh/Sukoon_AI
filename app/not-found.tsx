@@ -1,28 +1,16 @@
 "use client"
 
-import { useEffect } from "react"
 import { motion } from "framer-motion"
-import { RefreshCw, Home, Heart, ShieldAlert } from "lucide-react"
+import { Compass, Home, LayoutDashboard, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
-export default function ErrorBoundary({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
-  useEffect(() => {
-    // Log error to monitoring services in production
-    console.error("SukoonAI Application Error:", error)
-  }, [error])
-
+export default function NotFound() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Soft Ambient Background Glow */}
-      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+      {/* Ambient background glow */}
+      <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
@@ -30,29 +18,28 @@ export default function ErrorBoundary({
         transition={{ duration: 0.5 }}
         className="max-w-md w-full bg-card/80 backdrop-blur-md border border-primary/20 p-8 rounded-3xl shadow-2xl text-center space-y-6 relative z-10"
       >
-        <div className="w-16 h-16 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto text-primary shadow-inner">
-          <Heart className="w-8 h-8 text-primary animate-pulse" />
+        <div className="w-16 h-16 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-500 shadow-inner">
+          <Compass className="w-8 h-8 animate-spin" style={{ animationDuration: "20s" }} />
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-black tracking-tight text-foreground">Take a Deep Breath</h1>
+          <span className="text-xs font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
+            404 — Page Not Found
+          </span>
+          <h1 className="text-2xl font-black tracking-tight text-foreground pt-1">Finding Your Way Back</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Something unexpected occurred, but your peace of mind comes first. Let's get you back on track.
+            The page you are looking for doesn't exist or has moved. Let's guide you back to peace.
           </p>
         </div>
 
-        {error?.digest && (
-          <div className="p-3 rounded-xl bg-muted/40 border border-border/50 text-[11px] font-mono text-muted-foreground truncate">
-            Error Ref: {error.digest}
-          </div>
-        )}
-
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
           <Button
-            onClick={() => reset()}
+            asChild
             className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white rounded-2xl font-bold px-6 h-11 shadow-md shadow-primary/20 gap-2"
           >
-            <RefreshCw className="w-4 h-4" /> Try Again
+            <Link href="/dashboard">
+              <LayoutDashboard className="w-4 h-4" /> Go to Dashboard
+            </Link>
           </Button>
           <Button
             asChild

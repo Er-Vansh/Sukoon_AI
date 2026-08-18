@@ -16,11 +16,27 @@ export const metadata: Metadata = {
   title: "SukoonAI - AI Therapy & Professional Counselling",
   description:
     "Experience compassionate mental health support through AI therapy and professional counselling services. Connect with licensed counsellors for video consultations.",
-  generator: "CodeTitans",
-    icons: {
-      icon: "/favicon.svg",
-      apple: "/apple-icon.png",
-    },
+  generator: "SukoonAI",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/favicon.ico",
+  },
+  openGraph: {
+    title: "SukoonAI - Mental Health & Wellness Companion",
+    description:
+      "Your compassionate AI mental health companion for emotional support, 1-on-1 counsellor video bookings, mood tracking, and mindfulness games.",
+    url: "https://sukoonai.com",
+    siteName: "SukoonAI",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SukoonAI - Mental Health & Wellness Companion",
+    description:
+      "Your compassionate AI mental health companion for emotional support, 1-on-1 counsellor video bookings, mood tracking, and mindfulness games.",
+  },
 }
 
 export default function RootLayout({

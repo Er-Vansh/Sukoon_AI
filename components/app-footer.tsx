@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Brain, Mail, Phone, Github, Twitter, Linkedin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { FeedbackDialog } from "@/components/feedback-dialog"
 
 export function AppFooter() {
   const currentYear = new Date().getFullYear()
@@ -113,7 +114,9 @@ export function AppFooter() {
             <p className="text-sm text-muted-foreground text-center md:text-left">
               {currentYear} SukoonAI. All rights reserved. Building a healthier world together.
             </p>
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <FeedbackDialog />
+              <span className="text-muted-foreground/40">•</span>
               <Link href="/accessibility" className="hover:text-primary transition-colors">
                 Accessibility
               </Link>
@@ -130,3 +133,4 @@ export function AppFooter() {
     </footer>
   )
 }
+

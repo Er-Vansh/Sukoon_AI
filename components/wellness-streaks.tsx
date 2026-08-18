@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Flame, Award, ShieldCheck, Heart, Sparkles, CheckCircle, Calendar, Trophy } from "lucide-react"
+import { Flame, Award, Heart, Sparkles, CheckCircle, Trophy } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
+import { ConfettiBurst } from "@/components/confetti-burst"
+import { updateActivity, type UserStats } from "@/lib/gamification"
 
 interface Badge {
   id: string
@@ -16,38 +18,37 @@ interface Badge {
   unlocked: boolean
 }
 
-export function WellnessStreaks() {
-  const [streakDays, setStreakDays] = useState(3)
-  const [lastCheckIn, setLastCheckIn] = useState<string | null>(null)
-  const [checkedInToday, setCheckedInToday] = useState(false)
+interface WellnessStreaksProps {
+  userId?: string
+  stats?: UserStats | null
+  onStreakUpdated?: (updatedStats: UserStats) => void
+}
 
-  useEffect(() => {
-    const storedStreak = localStorage.getItem("sukoon_streak_days")
-    const storedLastDate = localStorage.getItem("sukoon_last_checkin_date")
-    const today = new Date().toISOString().split("T")[0]
+export function WellnessStreaks({ userId, stats, onStreakUpdated }: WellnessStreaksProps) {
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
 
-    if (storedStreak) {
-      setStreakDays(parseInt(storedStreak, 10))
-    }
-    if (storedLastDate) {
-      setLastCheckIn(storedLastDate)
-      if (storedLastDate === today) {
-        setCheckedInToday(true)
+  const today = new Date().toISOString().split("T")[0]
+  const streakDays = stats?.current_streak ?? 0
+  const checkedInToday = stats?.last_activity_date === today
+
+  const handleCheckIn = async () => {
+    if (checkedInToday || isUpdating || !userId) return
+    setIsUpdating(true)
+
+    try {
+      const updated = await updateActivity(userId, 10)
+      if (updated) {
+        setShowConfetti(true)
+        if (onStreakUpdated) {
+          onStreakUpdated(updated)
+        }
       }
+    } catch (err) {
+      console.error("Error claiming daily streak:", err)
+    } finally {
+      setIsUpdating(false)
     }
-  }, [])
-
-  const handleCheckIn = () => {
-    const today = new Date().toISOString().split("T")[0]
-    if (checkedInToday) return
-
-    const newStreak = streakDays + 1
-    setStreakDays(newStreak)
-    setCheckedInToday(true)
-    setLastCheckIn(today)
-
-    localStorage.setItem("sukoon_streak_days", newStreak.toString())
-    localStorage.setItem("sukoon_last_checkin_date", today)
   }
 
   const BADGES: Badge[] = [
@@ -89,57 +90,70 @@ export function WellnessStreaks() {
   const progressPercent = Math.min(100, Math.round((streakDays / nextBadge.requiredStreak) * 100))
 
   return (
-    <Card className="border-border bg-card/80 backdrop-blur-sm rounded-3xl shadow-md overflow-hidden">
+    <Card className="border-primary/20 bg-card/70 backdrop-blur-sm rounded-3xl shadow-xl overflow-hidden relative">
+      <ConfettiBurst trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
       <CardContent className="p-6 space-y-6">
         {/* Top Header & Streak Stats */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
-              <Flame className="h-7 w-7 text-orange-500 animate-bounce" />
-            </div>
+            <motion.div 
+              whileHover={{ scale: 1.15, rotate: 10 }}
+              whileTap={{ scale: 0.9 }}
+              className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-orange-500/20 to-amber-500/10 border border-orange-500/30 flex items-center justify-center shadow-lg shadow-orange-500/10"
+            >
+              <Flame className="h-8 w-8 text-orange-500 animate-pulse" />
+            </motion.div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-2xl font-bold text-foreground">{streakDays} Day Streak</h3>
-                {checkedInToday && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 font-semibold border border-green-500/20">
-                    Checked In Today
+                <h3 className="text-2xl font-black text-foreground tracking-tight">{streakDays} Day Streak</h3>
+                {checkedInToday ? (
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 font-bold border border-emerald-500/30 shadow-xs">
+                    ✓ Claimed Today
+                  </span>
+                ) : (
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 font-bold border border-amber-500/30 shadow-xs">
+                    Ready to Claim
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">Check in daily to build your mindfulness habit</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Check in daily to build your mindfulness habit & unlock rewards</p>
             </div>
           </div>
 
-          <Button
-            onClick={handleCheckIn}
-            disabled={checkedInToday}
-            className={`gap-2 text-xs font-semibold px-4 h-10 rounded-xl transition-all shadow-sm ${
-              checkedInToday
-                ? "bg-muted text-muted-foreground border border-border"
-                : "bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/20"
-            }`}
-          >
-            <CheckCircle className="h-4 w-4" />
-            {checkedInToday ? "Checked In" : "Claim Daily Check-In"}
-          </Button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleCheckIn}
+              disabled={checkedInToday || isUpdating || !userId}
+              className={`gap-2 text-xs font-bold px-5 h-11 rounded-2xl transition-all shadow-md ${
+                checkedInToday
+                  ? "bg-muted text-muted-foreground border border-border cursor-not-allowed"
+                  : "bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30"
+              }`}
+            >
+              <CheckCircle className="h-4 w-4" />
+              {checkedInToday ? "Checked In Today" : isUpdating ? "Claiming..." : "Claim Daily Streak (+10 Pts)"}
+            </Button>
+          </motion.div>
         </div>
 
         {/* Progress towards next badge */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs font-medium">
-            <span className="text-muted-foreground">Progress to Next Badge ({nextBadge.title})</span>
-            <span className="text-foreground font-bold">{streakDays} / {nextBadge.requiredStreak} Days</span>
+        <div className="space-y-2 bg-muted/40 p-4 rounded-2xl border border-border/50">
+          <div className="flex justify-between text-xs font-semibold">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary" /> Progress to <span className="text-foreground font-bold">{nextBadge.title}</span>
+            </span>
+            <span className="text-primary font-black">{streakDays} / {nextBadge.requiredStreak} Days ({progressPercent}%)</span>
           </div>
-          <Progress value={progressPercent} className="h-2 rounded-full" />
+          <Progress value={progressPercent} className="h-2.5 rounded-full bg-muted/80" />
         </div>
 
         {/* Achievement Badges Grid */}
-        <div className="space-y-3 pt-2 border-t border-border">
+        <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Award className="h-4 w-4 text-primary" /> Wellness Badges & Achievements
             </h4>
-            <span className="text-xs text-muted-foreground font-medium">
+            <span className="text-xs text-primary font-bold bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
               {BADGES.filter((b) => b.unlocked).length} of {BADGES.length} Unlocked
             </span>
           </div>
@@ -150,30 +164,31 @@ export function WellnessStreaks() {
               return (
                 <motion.div
                   key={badge.id}
-                  whileHover={{ scale: 1.03 }}
-                  className={`p-3.5 rounded-2xl border text-center flex flex-col items-center justify-between space-y-2 transition-all ${
+                  whileHover={{ scale: 1.05, y: -3 }}
+                  transition={{ type: "spring", stiffness: 350 }}
+                  className={`p-4 rounded-2xl border text-center flex flex-col items-center justify-between space-y-2.5 transition-all ${
                     badge.unlocked
-                      ? "bg-card border-primary/30 shadow-sm"
-                      : "bg-muted/30 border-border/50 opacity-60 grayscale"
+                      ? "bg-gradient-to-b from-card to-primary/5 border-primary/40 shadow-md shadow-primary/5"
+                      : "bg-muted/20 border-border/40 opacity-55 grayscale"
                   }`}
                 >
                   <div
-                    className={`h-10 w-10 rounded-xl flex items-center justify-center ${
-                      badge.unlocked ? "bg-primary/10 text-primary border border-primary/20" : "bg-muted text-muted-foreground"
+                    className={`h-11 w-11 rounded-2xl flex items-center justify-center transition-transform ${
+                      badge.unlocked ? "bg-primary/15 text-primary border border-primary/30 shadow-inner" : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    <BIcon className="h-5 w-5" />
+                    <BIcon className="h-6 w-6" />
                   </div>
                   <div>
                     <h5 className="font-bold text-xs text-foreground">{badge.title}</h5>
-                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{badge.desc}</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-1">{badge.desc}</p>
                   </div>
                   <span
-                    className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${
-                      badge.unlocked ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"
+                    className={`text-[9px] font-bold px-2.5 py-0.5 rounded-full ${
+                      badge.unlocked ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/20" : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {badge.unlocked ? "Unlocked" : `${badge.requiredStreak} Days Required`}
+                    {badge.unlocked ? "Unlocked ✨" : `${badge.requiredStreak} Days Required`}
                   </span>
                 </motion.div>
               )

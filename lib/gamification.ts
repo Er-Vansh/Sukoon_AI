@@ -35,6 +35,30 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
     return createdData
   }
 
+  if (!data) return null
+
+  // Check if user missed a day since their last activity
+  const today = new Date().toISOString().split("T")[0]
+  const lastActivity = data.last_activity_date
+
+  if (lastActivity && lastActivity !== today) {
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split("T")[0]
+
+    // If last activity was neither today nor yesterday, the streak is broken and resets to 0
+    if (lastActivity !== yesterdayStr && data.current_streak > 0) {
+      const { data: updatedData } = await supabase
+        .from("user_stats")
+        .update({ current_streak: 0, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .select()
+        .single()
+
+      return updatedData || { ...data, current_streak: 0 }
+    }
+  }
+
   return data
 }
 
@@ -51,9 +75,7 @@ export async function updateActivity(userId: string, pointsToAdd: number = 10) {
   let newPoints = stats.points + pointsToAdd
 
   if (lastActivity === today) {
-    // Already active today, just add points if they did a new activity
-    // But usually we only increment points once per day for "Daily Mood"
-    // For games, we can add points every time.
+    // Already active today, just add points for new activities
   } else {
     const yesterday = new Date()
     yesterday.setDate(yesterday.getDate() - 1)
@@ -62,7 +84,7 @@ export async function updateActivity(userId: string, pointsToAdd: number = 10) {
     if (lastActivity === yesterdayStr) {
       newStreak += 1
     } else {
-      newStreak = 1 // Reset streak but count today as day 1
+      newStreak = 1 // Reset streak but count today's check-in as day 1
     }
 
     if (newStreak > newMaxStreak) {
