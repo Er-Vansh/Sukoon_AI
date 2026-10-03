@@ -52,19 +52,19 @@ export function PatientProgressChart({ patientId, patientName }: { patientId: st
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground)/0.1)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 4]} ticks={[0, 1, 2, 3, 4]} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" strokeOpacity={0.4} />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+              <YAxis domain={[0, 4]} ticks={[0, 1, 2, 3, 4]} tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
               <Tooltip 
-                contentStyle={{ borderRadius: "8px", background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+                contentStyle={{ borderRadius: "12px", background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
               />
               <Line 
                 type="monotone" 
                 dataKey="mood" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2} 
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                stroke="var(--primary)" 
+                strokeWidth={3} 
+                dot={{ r: 4, fill: "var(--primary)" }}
+                activeDot={{ r: 6, fill: "var(--primary)" }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -77,3 +77,4 @@ export function PatientProgressChart({ patientId, patientName }: { patientId: st
     </Card>
   )
 }
+

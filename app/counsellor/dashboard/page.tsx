@@ -15,7 +15,6 @@ import { motion } from "framer-motion"
 import dynamic from "next/dynamic"
 import type { User } from "@supabase/supabase-js"
 
-const ThreeScene = dynamic(() => import("@/components/three-scene").then((mod: any) => mod.ThreeScene), { ssr: false })
 const CounsellorAvailability = dynamic(() => import("@/components/counsellor-availability").then((mod: any) => mod.CounsellorAvailability), { 
   ssr: false,
   loading: () => <div className="h-[400px] flex items-center justify-center border rounded-lg animate-pulse bg-muted/20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -132,7 +131,6 @@ export default function CounsellorDashboard() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <ThreeScene />
       <AppHeader />
 
       <motion.div

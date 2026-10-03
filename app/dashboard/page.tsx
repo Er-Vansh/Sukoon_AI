@@ -40,12 +40,10 @@ import type { User } from "@supabase/supabase-js"
 
 import { getUserStats, updateActivity, type UserStats } from "@/lib/gamification"
 import { ConfettiBurst } from "@/components/confetti-burst"
-import { ThreeLogo } from "@/components/three-logo"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 
-const ThreeScene = dynamic(() => import("@/components/three-scene").then((mod: any) => mod.ThreeScene), { ssr: false })
 const MoodAnalytics = dynamic(() => import("@/components/mood-analytics").then((mod: any) => mod.MoodAnalytics), { ssr: false }) as any
 const MoodHeatmap = dynamic(() => import("@/components/mood-heatmap").then((mod: any) => mod.MoodHeatmap), { ssr: false }) as any
 const AnxietyGames = dynamic(() => import("@/components/anxiety-games").then((mod: any) => mod.AnxietyGames), { 
@@ -349,11 +347,10 @@ export default function PatientDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden selection:bg-primary/20">
       <OnboardingTour />
-      <ThreeScene />
       <ConfettiBurst trigger={showConfetti} onComplete={() => setShowConfetti(false)} />
       <AppHeader />
 
-      {/* 3D Glassmorphic Hero Banner */}
+      {/* Hero Banner */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -363,11 +360,8 @@ export default function PatientDashboard() {
         <div className="container mx-auto px-4 py-8 md:py-10">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
-            {/* Left: Greeting & 3D Interactive Logo */}
+            {/* Left: Greeting */}
             <div className="flex items-start md:items-center gap-4">
-              <div className="hidden sm:flex p-3 rounded-2xl bg-primary/10 border border-primary/20 shadow-inner">
-                <ThreeLogo />
-              </div>
               <div className="space-y-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">

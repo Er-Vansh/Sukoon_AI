@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Brain, Menu, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { createBrowserClient } from "@/lib/client"
 import { useRouter } from "next/navigation"
 import type { Session } from "@supabase/supabase-js"
@@ -189,6 +189,9 @@ export function AppHeader({ variant = "default", user: initialUser }: AppHeaderP
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[80%] sm:w-87.5">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Navigation Menu</SheetTitle>
+                  </SheetHeader>
                   <div className="flex flex-col gap-4 mt-8">
                     {showNavLinks &&
                       navLinks.map((link) => {
